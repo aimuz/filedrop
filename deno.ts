@@ -1,11 +1,12 @@
 import { UserAgent } from "@std/http/user-agent";
 import { serveDir } from "@std/http/file-server";
 import { getCookies, setCookie } from "@std/http/cookie";
-import { faker } from '@faker-js/faker';
+import { faker } from "@faker-js/faker";
 
 Deno.serve((req, info) => {
   if (
-    req.url.includes("/server/webrtc") || req.url.includes("/server/fallback")
+    req.url.includes("/server/webrtc") ||
+    req.url.includes("/server/fallback")
   ) {
     if (req.headers.get("upgrade") != "websocket") {
       return new Response(null, { status: 426 });
@@ -20,7 +21,7 @@ Deno.serve((req, info) => {
 
 const websocket = (req: Request, ip: string) => {
   const { socket, response } = Deno.upgradeWebSocket(req);
-  const headers = new Headers(response.headers)
+  const headers = new Headers(response.headers);
   const peer = new Peer(socket, req, ip);
   if (!peer.id) {
     const uuid = self.crypto.randomUUID();
@@ -36,10 +37,12 @@ const websocket = (req: Request, ip: string) => {
     headers: headers,
     status: response.status,
     statusText: response.statusText,
-  })
-
+  });
+  socket.addEventListener("error", console.error);
   socket.addEventListener("open", () => {
+    console.log(`Peer connected: ${peer.id} from ${peer.ip}`);
     joinRoom(peer);
+    peer.keepAlive();
     socket.addEventListener("message", (event) => {
       try {
         const message = JSON.parse(event.data);
@@ -152,11 +155,7 @@ class Peer {
   public socket: WebSocket;
   public timerId = 0;
   public lastBeat: number;
-  constructor(
-    socket: WebSocket,
-    req: Request,
-    ip: string,
-  ) {
+  constructor(socket: WebSocket, req: Request, ip: string) {
     this.socket = socket;
     this.id = this._getID(req);
     this.ip = ip;
