@@ -23,3 +23,20 @@ This fork, **Filedrop**, was created to provide a version of Snapdrop that is fr
 Have any questions? Read our [FAQ](/docs/faq.md).
 
 You can [host your own instance with Docker](/docs/local-dev.md).
+
+## Running with Deno
+
+This project is now powered by [Deno](https://deno.land/).
+
+To run the project locally, you need to have Deno installed. You can find the installation instructions [here](https://deno.land/manual/getting_started/installation).
+
+Once you have Deno installed, you can start the server with the following command:
+
+```bash
+deno run --allow-net --allow-read deno.ts
+```
+
+- `--allow-net`: This permission is required to create a web server.
+- `--allow-read`: This permission is required to serve the files from the `public` directory.
+
+The server will start on `http://localhost:8000`.
