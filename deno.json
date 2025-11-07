@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@faker-js/faker": "npm:@faker-js/faker@^10.1.0",
+    "@std/http": "jsr:@std/http@^1.0.21"
+  }
+}

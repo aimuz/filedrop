@@ -424,7 +424,7 @@ class Notifications {
     });
   }
 
-  _notify(message, body) {
+  _notify(message, body, closeTimeout = 20000) {
     const config = {
       body: body,
       icon: "/images/logo_transparent_128x128.png",
@@ -439,37 +439,29 @@ class Notifications {
     }
 
     // Notification is persistent on Android. We have to close it manually
-    const visibilitychangeHandler = () => {
-      if (document.visibilityState === "visible") {
-        notification.close();
-        Events.off("visibilitychange", visibilitychangeHandler);
-      }
-    };
-    Events.on("visibilitychange", visibilitychangeHandler);
+    if (closeTimeout) {
+      setTimeout((_) => notification.close(), closeTimeout);
+    }
 
     return notification;
   }
 
   _messageNotification(message) {
-    if (document.visibilityState !== "visible") {
-      if (isURL(message)) {
-        const notification = this._notify(message, "Click to open link");
-        this._bind(notification, (e) =>
-          window.open(message, "_blank", null, true),
-        );
-      } else {
-        const notification = this._notify(message, "Click to copy text");
-        this._bind(notification, (e) => this._copyText(message, notification));
-      }
+    if (isURL(message)) {
+      const notification = this._notify(message, "Click to open link");
+      this._bind(notification, (e) =>
+        window.open(message, "_blank", null, true),
+      );
+    } else {
+      const notification = this._notify(message, "Click to copy text");
+      this._bind(notification, (e) => this._copyText(message, notification));
     }
   }
 
   _downloadNotification(message) {
-    if (document.visibilityState !== "visible") {
-      const notification = this._notify(message, "Click to download");
-      if (!window.isDownloadSupported) return;
-      this._bind(notification, (e) => this._download(notification));
-    }
+    const notification = this._notify(message, "Click to download");
+    if (!window.isDownloadSupported) return;
+    this._bind(notification, (e) => this._download(notification));
   }
 
   _download(notification) {
@@ -535,7 +527,7 @@ class WebShareTargetUI {
   }
 }
 
-class FileDrop {
+class Snapdrop {
   constructor() {
     const server = new ServerConnection();
     const peers = new PeersManager(server);
@@ -552,11 +544,11 @@ class FileDrop {
   }
 }
 
-FileDrop = new FileDrop();
+const snapdrop = new Snapdrop();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register("service-worker.js")
+    .register("/service-worker.js")
     .then((serviceWorker) => {
       console.log("Service Worker registered");
       window.serviceWorker = serviceWorker;
@@ -604,7 +596,7 @@ Events.on("load", () => {
 
   function drawCircle(radius) {
     ctx.beginPath();
-    let color = Math.round(197 * (1 - radius / Math.max(w, h)));
+    let color = Math.round(255 * (1 - radius / Math.max(w, h)));
     ctx.strokeStyle = "rgba(" + color + "," + color + "," + color + ",0.1)";
     ctx.arc(x0, y0, radius, 0, 2 * Math.PI);
     ctx.stroke();
