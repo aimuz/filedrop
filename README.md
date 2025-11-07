@@ -1,22 +1,19 @@
-# Snapdrop 
+# Filedrop
+
+This project is a fork of the original [Snapdrop](https://github.com/RobinLinus/snapdrop). We are very grateful for the work of the original developers.
+
+## Why Filedrop?
+
+The original Snapdrop project was acquired by LimeWire. This has led to concerns within the community regarding user privacy and data collection on the official `snapdrop.net` domain. For more context, you can read the community discussions [here](https://github.com/SnapDrop/snapdrop/issues/663).
+
+This fork, **Filedrop**, was created to provide a version of Snapdrop that is free from third-party acquisitions and potential data tracking. Our goal is to continue the original spirit of Snapdrop as a simple, private, and local file sharing solution. This repository is based on the original source code, with the aim of ensuring it remains clean and independent.
+
+---
+# Snapdrop
 
 [Snapdrop](https://snapdrop.net): local file sharing in your browser. Inspired by Apple's Airdrop.
 
-## Snapdrop is now LimeWire
-Dear Snapdrop community,
-Snapdrop has been acquired by LimeWire, a leading file sharing platform with integrated AI tools. You can continue to share any files between devices, while benefitting from:
-* sharing files between devices in the same network
-* anonymous up- & downloads
-* end-to-end encryption
-* up to 40GB storage for free users
-* integrated AI tools for signed-up users
-
-Visit [snapdrop.net](https://snapdrop.net) or [limewire.com](https://limewire.com)
-
-The Github repository will stay as-is and you can still go ahead and download and run the classic Snapdrop on your own infrastructure.
-
-
-##  Classic Snapdrop is built with the following awesome technologies
+## Classic Snapdrop is built with the following awesome technologies
 * Vanilla HTML5 / ES6 / CSS3 frontend
 * [WebRTC](http://webrtc.org/) / [WebSockets](http://www.websocket.org/)
 * [NodeJS](https://nodejs.org/en/) backend

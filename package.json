@@ -1,16 +1,19 @@
 {
-  "name": "snapdrop",
+  "name": "filedrop",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "ua-parser-js": "^0.7.24",
-    "unique-names-generator": "^4.3.0",
-    "ws": "^7.4.6"
+    "unique-names-generator": "^4.3.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.46.0"
   }
 }
