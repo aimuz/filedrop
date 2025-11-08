@@ -21,6 +21,7 @@ type MessagePayload =
   | { type: "ping" }
   | { type: "pong" }
   | { type: "display-name"; message: PeerInfo["name"] }
+  | { type: "peerid"; message: string }
   | { type: "peers"; peers: PeerInfo[] }
   | { type: "peer-joined"; peer: PeerInfo }
   | { type: "peer-left"; peerId: string }
@@ -209,7 +210,6 @@ function handleWebSocket(req: Request, remoteAddr: Deno.NetAddr): Response {
   const { socket, response } = Deno.upgradeWebSocket(req);
   const ip = remoteAddr.hostname;
 
-  const responseHeaders = new Headers(response.headers);
   socket.addEventListener("open", () => {
     const room = roomManager.getOrCreateRoom(ip);
 
@@ -250,22 +250,14 @@ function handleWebSocket(req: Request, remoteAddr: Deno.NetAddr): Response {
 
     // If it's a new peer, set a cookie
     if (!getCookies(req.headers).peerid) {
-      const cookie: Cookie = {
-        name: "peerid",
-        value: peer.id,
-        sameSite: "Strict",
-        secure: true,
-        path: "/",
-      };
-      setCookie(responseHeaders, cookie);
+      peer.send({
+        type: "peerid",
+        message: peer.id,
+      });
     }
   });
 
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: responseHeaders,
-  });
+  return response;
 }
 
 // --- Message handler ---
@@ -302,7 +294,13 @@ function handleMessage(
 // Route: WebSocket connections
 Deno.serve((req, info) => {
   const url = new URL(req.url);
-
+  console.log(
+    `Incoming request: ${url.pathname} from ${info.remoteAddr.hostname}`,
+    "header",
+    req.headers,
+    "info",
+    info.remoteAddr,
+  );
   if (
     url.pathname.startsWith("/server/webrtc") ||
     url.pathname.startsWith("/server/fallback")
