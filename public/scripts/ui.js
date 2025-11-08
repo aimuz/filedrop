@@ -21,6 +21,10 @@ class PeersUI {
     Events.on("peers", (e) => this._onPeers(e.detail));
     Events.on("file-progress", (e) => this._onFileProgress(e.detail));
     Events.on("paste", (e) => this._onPaste(e));
+    Events.on("peerid", (e) => {
+      document.cookie = "peerid=" + e.detail +
+        "; SameSite=Strict; Secure; Path=/";
+    });
   }
 
   _onPeerJoined(peer) {
@@ -53,8 +57,7 @@ class PeersUI {
   }
 
   _onPaste(e) {
-    const files =
-      e.clipboardData.files ||
+    const files = e.clipboardData.files ||
       e.clipboardData.items
         .filter((i) => i.type.indexOf("image") > -1)
         .map((i) => i.getAsFile());
@@ -109,8 +112,9 @@ class PeerUI {
   }
 
   _bindListeners(el) {
-    el.querySelector("input").addEventListener("change", (e) =>
-      this._onFilesSelected(e),
+    el.querySelector("input").addEventListener(
+      "change",
+      (e) => this._onFilesSelected(e),
     );
     el.addEventListener("drop", (e) => this._onDrop(e));
     el.addEventListener("dragend", (e) => this._onDragEnd(e));
@@ -408,8 +412,9 @@ class Notifications {
       this.$button.addEventListener("click", (e) => this._requestPermission());
     }
     Events.on("text-received", (e) => this._messageNotification(e.detail.text));
-    Events.on("file-received", (e) =>
-      this._downloadNotification(e.detail.name),
+    Events.on(
+      "file-received",
+      (e) => this._downloadNotification(e.detail.name),
     );
   }
 
@@ -449,8 +454,9 @@ class Notifications {
   _messageNotification(message) {
     if (isURL(message)) {
       const notification = this._notify(message, "Click to open link");
-      this._bind(notification, (e) =>
-        window.open(message, "_blank", null, true),
+      this._bind(
+        notification,
+        (e) => window.open(message, "_blank", null, true),
       );
     } else {
       const notification = this._notify(message, "Click to copy text");
@@ -480,7 +486,7 @@ class Notifications {
       notification.then((e) =>
         serviceWorker.getNotifications().then((notifications) => {
           serviceWorker.addEventListener("notificationclick", handler);
-        }),
+        })
       );
     } else {
       notification.onclick = handler;

@@ -10,8 +10,9 @@ class ServerConnection {
     this._connect();
     Events.on("beforeunload", (e) => this._disconnect());
     Events.on("pagehide", (e) => this._disconnect());
-    document.addEventListener("visibilitychange", (e) =>
-      this._onVisibilityChange(),
+    document.addEventListener(
+      "visibilitychange",
+      (e) => this._onVisibilityChange(),
     );
   }
 
@@ -49,6 +50,9 @@ class ServerConnection {
       case "display-name":
         Events.fire("display-name", msg);
         break;
+      case "peerid":
+        Events.fire("peerid", msg.message);
+        break;
       default:
         console.error("WS: unkown message type", msg);
     }
@@ -63,8 +67,8 @@ class ServerConnection {
     // hack to detect if deployment or development environment
     const protocol = location.protocol.startsWith("https") ? "wss" : "ws";
     const webrtc = window.isRtcSupported ? "/webrtc" : "/fallback";
-    const url =
-      protocol + "://" + location.host + location.pathname + "server" + webrtc;
+    const url = protocol + "://" + location.host + location.pathname +
+      "server" + webrtc;
     return url;
   }
 
@@ -445,8 +449,9 @@ class FileChunker {
     this._onChunk = onChunk;
     this._onPartitionEnd = onPartitionEnd;
     this._reader = new FileReader();
-    this._reader.addEventListener("load", (e) =>
-      this._onChunkRead(e.target.result),
+    this._reader.addEventListener(
+      "load",
+      (e) => this._onChunkRead(e.target.result),
     );
   }
 
