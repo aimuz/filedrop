@@ -302,7 +302,7 @@ function handleMessage(
 // Route: WebSocket connections
 Deno.serve((req, info) => {
   const url = new URL(req.url);
-
+  console.log(`Incoming request: ${url.pathname} from ${info.remoteAddr.hostname}`, "header", req.headers, "info", info);
   if (
     url.pathname.startsWith("/server/webrtc") ||
     url.pathname.startsWith("/server/fallback")
