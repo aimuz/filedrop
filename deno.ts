@@ -1,7 +1,8 @@
 import { UserAgent } from "@std/http/user-agent";
 import { serveDir } from "@std/http/file-server";
-import { type Cookie, getCookies, setCookie } from "@std/http/cookie";
+import { getCookies } from "@std/http/cookie";
 import { faker } from "@faker-js/faker";
+import { matchSubnets } from "@std/net/unstable-ip";
 
 // --- Configuration constants ---
 const KEEPALIVE_INTERVAL = 30000; // 30 seconds
@@ -203,12 +204,37 @@ class RoomManager {
   }
 }
 
+// --- Proxy whitelist handling ---
+const proxyWhitelist = (Deno.env.get("PROXY_WHITELIST") ?? "")
+  .split(",")
+  .map((x) => x.trim())
+  .filter(Boolean);
+
+  function isTrustedProxyIP(ip: string): boolean {
+  return matchSubnets(ip, proxyWhitelist);
+}
+
+function getClientIp(req: Request, remoteAddr: Deno.NetAddr): string {
+  const headerIp = req.headers.get("CF-Connecting-IP") ??
+    req.headers.get("X-Real-IP") ??
+    req.headers.get("X-Forwarded-For");
+
+  const isTrustedProxy = isTrustedProxyIP(remoteAddr.hostname);
+
+  if (isTrustedProxy && headerIp) {
+    return headerIp.split(",")[0].trim();
+  }
+
+  return remoteAddr.hostname;
+}
+
 const roomManager = new RoomManager();
 
 // --- WebSocket connection handler ---
 function handleWebSocket(req: Request, remoteAddr: Deno.NetAddr): Response {
   const { socket, response } = Deno.upgradeWebSocket(req);
-  const ip = remoteAddr.hostname;
+
+  const ip = getClientIp(req, remoteAddr);
 
   socket.addEventListener("open", () => {
     const room = roomManager.getOrCreateRoom(ip);
