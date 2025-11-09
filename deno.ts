@@ -7,6 +7,55 @@ import { matchSubnets } from "@std/net/unstable-ip";
 // --- Configuration constants ---
 const KEEPALIVE_INTERVAL = 30000; // 30 seconds
 
+// --- Logging utility ---
+type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
+type LogMeta = Record<string, unknown>;
+
+const LOG_LEVEL_PRIORITIES: Record<LogLevel, number> = {
+  DEBUG: 10,
+  INFO: 20,
+  WARN: 30,
+  ERROR: 40,
+};
+
+function resolveActiveLogLevel(): LogLevel {
+  const envLevel = Deno.env.get("LOG_LEVEL")?.toUpperCase();
+  if (envLevel && envLevel in LOG_LEVEL_PRIORITIES) {
+    return envLevel as LogLevel;
+  }
+  return "INFO";
+}
+
+const ACTIVE_LOG_LEVEL = resolveActiveLogLevel();
+
+const levelToConsole: Record<LogLevel, (...args: unknown[]) => void> = {
+  DEBUG: console.debug,
+  INFO: console.log,
+  WARN: console.warn,
+  ERROR: console.error,
+};
+
+function log(level: LogLevel, message: string, meta?: LogMeta): void {
+  if (
+    LOG_LEVEL_PRIORITIES[level] < LOG_LEVEL_PRIORITIES[ACTIVE_LOG_LEVEL]
+  ) {
+    return;
+  }
+  const timestamp = new Date().toISOString();
+  const formattedMeta = meta && Object.keys(meta).length > 0 ? meta : undefined;
+  levelToConsole[level](
+    `[${timestamp}] [${level}] ${message}`,
+    ...(formattedMeta ? [formattedMeta] : []),
+  );
+}
+
+const logger = {
+  debug: (message: string, meta?: LogMeta) => log("DEBUG", message, meta),
+  info: (message: string, meta?: LogMeta) => log("INFO", message, meta),
+  warn: (message: string, meta?: LogMeta) => log("WARN", message, meta),
+  error: (message: string, meta?: LogMeta) => log("ERROR", message, meta),
+};
+
 // --- Type definitions ---
 // Define clear types for messages passed over WebSocket
 type PeerInfo = {
@@ -162,7 +211,11 @@ class Room {
 
     // 3. Add the new peer to the room
     this.peers.set(peer.id, peer);
-    console.log(`Peer joined: ${peer.id}, room size: ${this.peers.size}`);
+    logger.info("Peer joined", {
+      peerId: peer.id,
+      peerIp: peer.ip,
+      roomSize: this.peers.size,
+    });
   }
 
   // Handle logic when a peer leaves the room
@@ -170,7 +223,10 @@ class Room {
     if (this.peers.has(peerId)) {
       this.peers.delete(peerId);
       this.broadcast({ type: "peer-left", peerId: peerId });
-      console.log(`Peer left: ${peerId}, room size: ${this.peers.size}`);
+      logger.info("Peer left", {
+        peerId,
+        roomSize: this.peers.size,
+      });
     }
   }
 
@@ -199,7 +255,7 @@ class RoomManager {
     const room = this.rooms.get(ip);
     if (room && room.isEmpty()) {
       this.rooms.delete(ip);
-      console.log(`Room for IP ${ip} is empty and has been removed.`);
+      logger.info("Room removed after last peer left", { roomIp: ip });
     }
   }
 }
@@ -210,7 +266,7 @@ const proxyWhitelist = (Deno.env.get("PROXY_WHITELIST") ?? "")
   .map((x) => x.trim())
   .filter(Boolean);
 
-  function isTrustedProxyIP(ip: string): boolean {
+function isTrustedProxyIP(ip: string): boolean {
   return matchSubnets(ip, proxyWhitelist);
 }
 
@@ -252,7 +308,12 @@ function handleWebSocket(req: Request, remoteAddr: Deno.NetAddr): Response {
         const message = JSON.parse(event.data) as MessagePayload;
         handleMessage(peer, message, room);
       } catch (error) {
-        console.error("Failed to parse message:", error);
+        logger.error("Failed to parse client message", {
+          peerId: peer.id,
+          rawData: event.data,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
       }
     });
 
@@ -262,7 +323,11 @@ function handleWebSocket(req: Request, remoteAddr: Deno.NetAddr): Response {
     });
 
     socket.addEventListener("error", (err) => {
-      console.error(`WebSocket error for peer ${peer.id}:`, err);
+      logger.error("WebSocket transport error", {
+        peerId: peer.id,
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
     });
 
     // Add peer to the room
@@ -320,13 +385,15 @@ function handleMessage(
 // Route: WebSocket connections
 Deno.serve((req, info) => {
   const url = new URL(req.url);
-  console.log(
-    `Incoming request: ${url.pathname} from ${info.remoteAddr.hostname}`,
-    "header",
-    req.headers,
-    "info",
-    info.remoteAddr,
-  );
+  logger.info("Incoming request", {
+    method: req.method,
+    path: url.pathname,
+    upgrade: req.headers.get("upgrade") ?? "",
+  });
+  logger.debug("Request headers", {
+    headers: [...req.headers],
+    remoteHost: info.remoteAddr.hostname,
+  });
   if (
     url.pathname.startsWith("/server/webrtc") ||
     url.pathname.startsWith("/server/fallback")
@@ -345,4 +412,4 @@ Deno.serve((req, info) => {
   });
 });
 
-console.log("Server listening on http://localhost:8000");
+logger.info("Server listening", { url: "http://localhost:8000" });
