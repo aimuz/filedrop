@@ -1,6 +1,7 @@
 {
   "name": "FileDrop",
   "short_name": "FileDrop",
+  "start_url": "/",
   "icons": [
     {
       "src": "images/android-chrome-192x192.png",
@@ -36,6 +37,7 @@
   "share_target": {
     "method": "GET",
     "action": "/?share_target",
+    "enctype": "application/x-www-form-urlencoded",
     "params": {
       "title": "title",
       "text": "text",
